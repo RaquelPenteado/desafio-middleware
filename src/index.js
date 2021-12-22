@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 
 const { v4: uuidv4, validate } = require('uuid');
+const res = require('express/lib/response');
+const { json } = require('express/lib/response');
 
 const app = express();
 app.use(express.json());
@@ -11,18 +13,74 @@ const users = [];
 
 function checksExistsUserAccount(request, response, next) {
   // Complete aqui
+  const { username } = request.headers;
+
+  const user = users.find((user) => user.username === username);
+  
+  if(!user){
+    response.status(404).json({error: "User not found"});
+  }
+
+  request.user = user;
+
+  return next();
+
 }
 
 function checksCreateTodosUserAvailability(request, response, next) {
   // Complete aqui
+  const { user } = request;
+
+  user.pro = true;
+
+  if (!user.pro && user.todos.length >= 10){
+    return response.status(403).json({error: "não é pro ou estourou limite"});
+  }
+
+  return next();
 }
 
 function checksTodoExists(request, response, next) {
   // Complete aqui
+  const { username } = request.headers;
+  const { id } = request.params;
+  
+  const user = users.find(user => user.username === username);
+
+  if(!user){
+    return response.status(404).json({error: "user not found"});
+  }
+
+  if(!validate(id)){
+    return response.status(400).json({error: "id not uuid"});
+  }
+
+  const todo = user.todos.find(todos => todos.id === id);
+
+  if(!todo) {
+    return response.status(404).json({error: "task not found"});
+  }
+
+  request.todo = todo;
+  request.user = user;
+
+  return next();
 }
 
 function findUserById(request, response, next) {
   // Complete aqui
+  const { user } = request;
+  const { id } = request.params;
+
+  const userId = users.find((user) => user.id === id);
+
+  if(!userId){
+    response.status(404).json({error: "User not found"});
+  }
+
+  request.user = user;
+
+  return next();
 }
 
 app.post('/users', (request, response) => {
